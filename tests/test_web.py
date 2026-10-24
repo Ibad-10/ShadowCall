@@ -310,3 +310,25 @@ def test_guide_module_and_styles_are_served(tmp_path):
     assert js.status_code == 200 and "startTour" in js.text and "prefers-reduced-motion" in js.text
     css = c.get("/static/css/console-guide.css")
     assert css.status_code == 200 and ".switch" in css.text
+
+
+# -- saved live results ----------------------------------------------------------------------------
+def test_live_results_endpoint_serves_saved_file_or_nothing(tmp_path, monkeypatch):
+    import json as _json
+    path = tmp_path / "live_results.json"
+    monkeypatch.setenv("SHADOWCALL_LIVE_RESULTS", str(path))
+    c = signed_in(str(tmp_path / "t.db"))
+    assert c.get("/api/live-results").json() == {}
+    saved = {"label": "Live — real Mubit calls", "generated_utc": "2026-10-24T04:30:00+00:00",
+             "evals": {"eval_base": {"subtasks": {"extract": {"teacher": {"n": 43, "passed": 40}}}}}}
+    path.write_text(_json.dumps(saved, ensure_ascii=False), encoding="utf-8")
+    got = c.get("/api/live-results").json()
+    assert got["label"] == "Live — real Mubit calls" and got["evals"]["eval_base"]["subtasks"]["extract"]["teacher"]["n"] == 43
+    path.write_text("{not json", encoding="utf-8")
+    assert c.get("/api/live-results").json() == {}
+    assert TestClient(create_app(str(tmp_path / "u.db"))).get("/api/live-results").status_code == 401
+
+
+def test_evaluation_page_labels_live_results():
+    js = (STATIC / "js" / "app.js").read_text(encoding="utf-8")
+    assert "/api/live-results" in js and "Live — real Mubit calls" in js and "small n" in js

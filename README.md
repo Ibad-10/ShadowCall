@@ -141,3 +141,6 @@ Run 1 exposed fixture bugs, not just model errors. Fixes:
 - R6 was missing on refused slots.
 - The claim check rejected "8:00 a.m." against "08:00".
 - Teacher resamples were identical (0 of 27 fixed). They have been replaced by a correction turn, which fixed 5 of 5 live.
+
+## Live run (Sat 24 Oct 2026, 05:16–06:02 BST)
+Real Mubit calls: `gpt-6-sol` against `openai/gpt-oss-20b`, scored by our own checker. The results are in `data/live_results.md` and `.json`, and the Evaluation page shows them with the label "Live — real Mubit calls". To reproduce, run `scripts_live_run.py` with `train`, `eval --tag base` and `report`. The run log and the deviations from the plan are in `PREREG.md`.

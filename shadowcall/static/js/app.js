@@ -493,14 +493,43 @@ function chart(rep) {
   return `<div class="chart"><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Test score per job for each version">${g}</svg></div>`;
 }
 
+const LIVE_LANES = { teacher: "Big model (frontier)", shadow: "Small model, untrained" };
+
+function liveDate(iso) {
+  const d = new Date(iso);
+  return isNaN(d) ? esc(iso) : esc(d.toLocaleString("en-GB", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit", timeZone: "Europe/London", timeZoneName: "short" }));
+}
+
+function livePanel(lr) {
+  if (!lr || !lr.evals || !Object.keys(lr.evals).length) return "";
+  return Object.entries(lr.evals).map(([phase, ev]) => {
+    const ns = new Set();
+    const rows = SUBTASKS.filter((t) => ev.subtasks[t]).map((t) => Object.keys(LIVE_LANES).map((l, i) => {
+      const d = ev.subtasks[t][l] || {};
+      ns.add(d.n);
+      const small = d.n != null && d.n < 20 ? ` <span class="badge b-warn" title="Fewer than 20 calls: treat as a rough signal">small n</span>` : "";
+      return `<tr>${i === 0 ? `<td rowspan="2" style="vertical-align:top;padding-top:12px">${stName(t)}</td>` : ""}<td>${LIVE_LANES[l]}</td>
+        <td class="num">${d.accuracy == null ? "–" : pct(d.accuracy, 1)} <span class="faint">(${d.passed ?? "–"}/${d.n ?? "–"})</span>${small}</td>
+        <td class="num">${d.median_latency_ms == null ? "–" : Math.round(d.median_latency_ms) + " ms"}</td>
+        <td class="num">${d.median_pence == null ? "–" : pence(d.median_pence)}</td>
+        <td class="num">${d.red_flag_n ? `${d.red_flag_misses} missed of ${d.red_flag_n}` : "–"}</td></tr>`;
+    }).join("")).join("");
+    return `<div class="panel" data-live-results><header><h2>${icon("activity")}${esc(lr.label || "Live — real Mubit calls")}</h2><span class="badge b-ok">live</span></header>
+      <div class="body"><p class="faint" style="margin:0 0 6px">${esc(phase.replace("eval_", "Run: "))} · ${liveDate(ev.from_utc)} to ${liveDate(ev.to_utc)} · ${[...ns].filter((x) => x != null).join(", ")} unseen test calls per job · big model <span class="mono">${esc(lr.teacher_model)}</span>, small model <span class="mono">${esc(lr.shadow_model)}</span> · marked by our own checker, not by the big model.</p>
+      <p class="faint" style="margin:0">Pence: ${esc(lr.pence_note || "")}. Saved ${liveDate(lr.generated_utc)}.</p></div>
+      <div class="tbl-wrap"><table class="tbl"><thead><tr><th>Job</th><th>Version</th><th class="num">Score (right/total)</th><th class="num">Median speed</th><th class="num">Median pence</th><th class="num">Emergencies</th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
+  }).join("") + (lr.findings?.length ? `<div class="panel"><header><h2>${icon("info")}What to know about these live numbers</h2></header><div class="body"><ul style="margin:0;padding-left:18px">${lr.findings.map((f) => `<li>${esc(f)}</li>`).join("")}</ul></div></div>` : "");
+}
+
 views.evaluation = {
   title: "Evaluation",
   async render() {
-    const rep = await api("/api/eval/report");
+    const [rep, lr] = await Promise.all([api("/api/eval/report"), api("/api/live-results").catch(() => ({}))]);
+    const live = livePanel(lr);
     const has = rep && rep.subtasks && Object.keys(rep.subtasks).length;
     const head = `<div class="ph"><div><h1>Evaluation</h1><p>The same unseen test calls through four versions: the big model, the small model untrained, and the small model trained on every answer or only on answers the checker approved.</p></div>
       <div class="actions"><button class="btn btn-primary" data-run="eval">${icon("flask-conical")}${has ? "Re-run the test" : "Run the fair test"}</button></div></div>`;
-    if (!has) { content.innerHTML = head + `<div class="panel">${empty("flask-conical", "No test results yet", "Run the fair test to compare all four versions on calls none of them learned from. In mock mode it takes a few seconds and costs nothing.", `<button class="btn btn-primary" data-run="eval">${icon("flask-conical")}Run the fair test</button>`)}</div>`; return; }
+    if (!has) { content.innerHTML = head + (live ? `<div class="stack" style="margin-bottom:16px">${live}</div>` : "") + `<div class="panel">${empty("flask-conical", "No test results yet", "Run the fair test to compare all four versions on calls none of them learned from. In mock mode it takes a few seconds and costs nothing.", `<button class="btn btn-primary" data-run="eval">${icon("flask-conical")}Run the fair test</button>`)}</div>`; return; }
     const lanes = Object.keys(LANES);
     const rows = SUBTASKS.filter((t) => rep.subtasks[t]).map((t) => {
       const best = Math.max(...lanes.map((l) => rep.subtasks[t][l]?.accuracy ?? -1));
@@ -511,7 +540,7 @@ views.evaluation = {
           <td class="num ${ok && d.accuracy === best ? "best" : ""}">${ok ? pct(d.accuracy, 1) : "n/a"}</td><td class="num">${ok ? pence(d.pence_per_call) : "–"}</td><td class="num">${ok && d.latency_ms ? Math.round(d.latency_ms) + " ms" : "–"}</td><td class="num">${d.red_flag_accuracy == null ? "–" : pct(d.red_flag_accuracy)}</td><td class="num faint">${d.n ?? "–"}</td></tr>`;
       }).join("");
     }).join("");
-    content.innerHTML = head + (rep.mode !== "live" ? `<div class="notice warn" style="margin-bottom:16px">${icon("info")}<span class="grow">Mock mode: both models are simulated. Use this to check the pipeline, not to quote results.</span></div>` : "") +
+    content.innerHTML = head + (live ? `<div class="stack" style="margin-bottom:16px">${live}</div>` : "") + (rep.mode !== "live" ? `<div class="notice warn" style="margin-bottom:16px">${icon("info")}<span class="grow">Mock mode: the table below is simulated. Use it to check the pipeline, not to quote results.${live ? " The live panel above is real." : ""}</span></div>` : "") +
       `<div class="stack"><div class="panel"><header><h2>${icon("activity")}Test score by job${tip(TIPS.meter, "tip-down")}</h2><span class="legend">${lanes.map((l) => `<span><i style="background:${LANES[l].color}"></i>${LANES[l].label}</span>`).join("")}</span></header><div class="body">${chart(rep)}</div></div>
       <div class="panel"><header><h2>${icon("flask-conical")}Full table</h2><span class="sub">${rep.n_heldout} test calls · marked by the rule checker</span></header><div class="tbl-wrap"><table class="tbl"><thead><tr><th>Job</th><th>Version</th><th class="num">Score</th><th class="num">Pence / call ${tip(TIPS.cost, "tip-down")}</th><th class="num">Speed ${tip(TIPS.latency, "tip-down")}</th><th class="num">Emergencies caught ${tip(TIPS.red, "tip-end tip-down")}</th><th class="num">Calls ${tip(TIPS.n, "tip-end tip-down")}</th></tr></thead><tbody>${rows}</tbody></table></div></div></div>`;
   },

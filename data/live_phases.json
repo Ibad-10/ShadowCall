@@ -1,0 +1,4 @@
+{
+  "eval_base": "cards_v1_s7.jsonl",
+  "eval_redflag": "cards_v1_s31_heldout_redflag.jsonl"
+}

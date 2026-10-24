@@ -1,0 +1,270 @@
+{
+  "label": "Live — real Mubit calls",
+  "generated_utc": "2026-10-24T05:04:58+00:00",
+  "teacher_model": "gpt-6-sol",
+  "shadow_model": "openai/gpt-oss-20b",
+  "cards": "cards_v1_s31_heldout_redflag.jsonl",
+  "scoring": "ShadowCall's own checker (call card + policy engine v1); the frontier is never the judge",
+  "pence_note": "provider tokens only, at 75p per US$; Mubit's per-request fee is not included",
+  "findings": [
+    "Red-flag set, extract: every reply (both models) fails on preferred_date. The card truth sets it to null for a red-flag emergency, but the extract prompt only says 'emergency without red flags -> today'. That is a gap in our spec, not a model error; the red_flags field itself is scored separately as red-flag misses.",
+    "Held-out set cards_v1_s7 has no red-flag calls, so red-flag numbers come only from the 15-card supplementary set (small n).",
+    "Some red-flag small-model calls are missing (n < 15): Groq's 200,000 tokens-a-day limit was reached; not retried.",
+    "Arms C/D (adapter) not run: Mubit gives the inference key no adapter endpoint, kept count or training status."
+  ],
+  "training": {
+    "extract": {
+      "probes": 30,
+      "probe_passed": 27,
+      "correction_turns": 3,
+      "correction_passed": 3,
+      "record_full_sent": 30,
+      "record_full_reverified": 30
+    },
+    "policy_check": {
+      "probes": 32,
+      "probe_passed": 24,
+      "correction_turns": 8,
+      "correction_passed": 7,
+      "record_full_sent": 31,
+      "record_full_reverified": 30
+    },
+    "form_fill": {
+      "probes": 30,
+      "probe_passed": 23,
+      "correction_turns": 7,
+      "correction_passed": 7,
+      "record_full_sent": 30,
+      "record_full_reverified": 30
+    },
+    "summary": {
+      "probes": 30,
+      "probe_passed": 30,
+      "correction_turns": 0,
+      "correction_passed": 0,
+      "record_full_sent": 30,
+      "record_full_reverified": 30
+    }
+  },
+  "evals": {
+    "eval_base": {
+      "subtasks": {
+        "extract": {
+          "teacher": {
+            "n": 43,
+            "passed": 41,
+            "accuracy": 0.953,
+            "median_latency_ms": 2015.5765,
+            "median_pence": 0.1118,
+            "red_flag_n": 0,
+            "failed_on_red_flag_calls": 0,
+            "red_flag_misses": 0
+          },
+          "shadow": {
+            "n": 43,
+            "passed": 28,
+            "accuracy": 0.651,
+            "median_latency_ms": 623.0556,
+            "median_pence": 0.0057,
+            "red_flag_n": 0,
+            "failed_on_red_flag_calls": 0,
+            "red_flag_misses": 0
+          }
+        },
+        "policy_check": {
+          "teacher": {
+            "n": 43,
+            "passed": 33,
+            "accuracy": 0.767,
+            "median_latency_ms": 2051.8337,
+            "median_pence": 0.1845,
+            "red_flag_n": 0,
+            "failed_on_red_flag_calls": 0,
+            "red_flag_misses": 0
+          },
+          "shadow": {
+            "n": 43,
+            "passed": 21,
+            "accuracy": 0.488,
+            "median_latency_ms": 737.3836,
+            "median_pence": 0.0101,
+            "red_flag_n": 0,
+            "failed_on_red_flag_calls": 0,
+            "red_flag_misses": 0
+          }
+        },
+        "form_fill": {
+          "teacher": {
+            "n": 43,
+            "passed": 35,
+            "accuracy": 0.814,
+            "median_latency_ms": 1739.8341,
+            "median_pence": 0.1683,
+            "red_flag_n": 0,
+            "failed_on_red_flag_calls": 0,
+            "red_flag_misses": 0
+          },
+          "shadow": {
+            "n": 43,
+            "passed": 11,
+            "accuracy": 0.256,
+            "median_latency_ms": 1323.3496,
+            "median_pence": 0.008,
+            "red_flag_n": 0,
+            "failed_on_red_flag_calls": 0,
+            "red_flag_misses": 0
+          }
+        },
+        "summary": {
+          "teacher": {
+            "n": 43,
+            "passed": 43,
+            "accuracy": 1.0,
+            "median_latency_ms": 1689.3718,
+            "median_pence": 0.0933,
+            "red_flag_n": 0,
+            "failed_on_red_flag_calls": 0,
+            "red_flag_misses": 0
+          },
+          "shadow": {
+            "n": 43,
+            "passed": 43,
+            "accuracy": 1.0,
+            "median_latency_ms": 633.1302,
+            "median_pence": 0.0048,
+            "red_flag_n": 0,
+            "failed_on_red_flag_calls": 0,
+            "red_flag_misses": 0
+          }
+        }
+      },
+      "per_call": {
+        "teacher": {
+          "n_calls": 43,
+          "median_pence": 0.5682,
+          "median_latency_ms_4_subtasks_sequential": 7612.368
+        },
+        "shadow": {
+          "n_calls": 43,
+          "median_pence": 0.029,
+          "median_latency_ms_4_subtasks_sequential": 7707.6859
+        }
+      },
+      "from_utc": "2026-10-24T04:25:52+00:00",
+      "to_utc": "2026-10-24T04:45:45+00:00",
+      "cards": "cards_v1_s7.jsonl",
+      "shadow_calls_over_10s": 18,
+      "latency_note": "18 of 172 small-model calls took over 10 s while waiting on Groq's 8,000 tokens-a-minute limit; medians are shown so these waits barely move them, but the summed per-call time includes them"
+    },
+    "eval_redflag": {
+      "subtasks": {
+        "extract": {
+          "teacher": {
+            "n": 15,
+            "passed": 0,
+            "accuracy": 0.0,
+            "median_latency_ms": 2492.0973,
+            "median_pence": 0.1316,
+            "red_flag_n": 15,
+            "failed_on_red_flag_calls": 15,
+            "red_flag_misses": 0
+          },
+          "shadow": {
+            "n": 15,
+            "passed": 0,
+            "accuracy": 0.0,
+            "median_latency_ms": 505.0573,
+            "median_pence": 0.0058,
+            "red_flag_n": 15,
+            "failed_on_red_flag_calls": 15,
+            "red_flag_misses": 2
+          }
+        },
+        "policy_check": {
+          "teacher": {
+            "n": 15,
+            "passed": 15,
+            "accuracy": 1.0,
+            "median_latency_ms": 1682.903,
+            "median_pence": 0.1473,
+            "red_flag_n": 15,
+            "failed_on_red_flag_calls": 0,
+            "red_flag_misses": 0
+          },
+          "shadow": {
+            "n": 13,
+            "passed": 12,
+            "accuracy": 0.923,
+            "median_latency_ms": 471.5572,
+            "median_pence": 0.0069,
+            "red_flag_n": 13,
+            "failed_on_red_flag_calls": 1,
+            "red_flag_misses": 1
+          }
+        },
+        "form_fill": {
+          "teacher": {
+            "n": 15,
+            "passed": 15,
+            "accuracy": 1.0,
+            "median_latency_ms": 1374.128,
+            "median_pence": 0.1411,
+            "red_flag_n": 15,
+            "failed_on_red_flag_calls": 0,
+            "red_flag_misses": 0
+          },
+          "shadow": {
+            "n": 14,
+            "passed": 4,
+            "accuracy": 0.286,
+            "median_latency_ms": 463.7537,
+            "median_pence": 0.007,
+            "red_flag_n": 14,
+            "failed_on_red_flag_calls": 10,
+            "red_flag_misses": 10
+          }
+        },
+        "summary": {
+          "teacher": {
+            "n": 15,
+            "passed": 15,
+            "accuracy": 1.0,
+            "median_latency_ms": 1805.8737,
+            "median_pence": 0.0987,
+            "red_flag_n": 15,
+            "failed_on_red_flag_calls": 0,
+            "red_flag_misses": 0
+          },
+          "shadow": {
+            "n": 12,
+            "passed": 12,
+            "accuracy": 1.0,
+            "median_latency_ms": 561.9043,
+            "median_pence": 0.0048,
+            "red_flag_n": 12,
+            "failed_on_red_flag_calls": 0,
+            "red_flag_misses": 0
+          }
+        }
+      },
+      "per_call": {
+        "teacher": {
+          "n_calls": 15,
+          "median_pence": 0.5211,
+          "median_latency_ms_4_subtasks_sequential": 7457.7285
+        },
+        "shadow": {
+          "n_calls": 12,
+          "median_pence": 0.0246,
+          "median_latency_ms_4_subtasks_sequential": 3823.1144
+        }
+      },
+      "from_utc": "2026-10-24T04:49:22+00:00",
+      "to_utc": "2026-10-24T05:02:24+00:00",
+      "cards": "cards_v1_s31_heldout_redflag.jsonl",
+      "shadow_calls_over_10s": 5,
+      "latency_note": "5 of 54 small-model calls took over 10 s while waiting on Groq's 8,000 tokens-a-minute limit; medians are shown so these waits barely move them, but the summed per-call time includes them"
+    }
+  },
+  "spend_usd_estimate": 4.57
+}

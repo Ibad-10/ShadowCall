@@ -17,7 +17,7 @@ from pydantic import BaseModel
 
 from . import evalh, gate, synth
 from .auth import COOKIE, SESSION_DAYS, Auth, AuthError
-from .config import _bool, get_settings
+from .config import ROOT, _bool, get_settings
 from .pipeline import Pipeline
 from .store import Store
 from .subtasks import SUBTASKS
@@ -490,6 +490,18 @@ def create_app(db_path: str | None = None, auth_enabled: bool | None = None) -> 
     @app.get("/api/eval/report")
     def eval_report():
         return st.last_report or {}
+
+    @app.get("/api/live-results")
+    def live_results():
+        """Saved results of a live run (scripts_live_run.py report): real Mubit calls, with time and n.
+        Shown in every mode, always labelled; never mixed into the mock report."""
+        path = Path(os.environ.get("SHADOWCALL_LIVE_RESULTS", str(ROOT / "data" / "live_results.json")))
+        if not path.is_file():
+            return {}
+        try:
+            return json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            return {}
 
     @app.get("/api/settings")
     def settings_view(request: Request):
