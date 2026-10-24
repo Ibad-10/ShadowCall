@@ -1,0 +1,26 @@
+# Render Blueprint. Not deployed: review, then "New > Blueprint" in Render and point it at this repo.
+services:
+  - type: web
+    name: shadowcall
+    runtime: docker
+    plan: starter            # a persistent disk needs a paid plan; without one SQLite resets on each deploy
+    healthCheckPath: /healthz
+    disk:
+      name: shadowcall-data
+      mountPath: /data
+      sizeGB: 1
+    envVars:
+      - key: SHADOWCALL_MODE
+        value: mock
+      - key: SHADOWCALL_DB
+        value: /data/shadowcall.db
+      - key: SHADOWCALL_SIGNUP
+        value: "false"       # invite-only on the public internet; the demo account still works
+      - key: SHADOWCALL_COOKIE_SECURE
+        value: "true"
+      - key: DEMO_USER
+        sync: false          # set in the dashboard; never commit it
+      - key: DEMO_PASSWORD
+        sync: false
+      - key: MUBIT_API_KEY
+        sync: false

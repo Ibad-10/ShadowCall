@@ -1,0 +1,22 @@
+.auth { min-height:100vh; display:grid; grid-template-columns:minmax(0, 1fr) minmax(0, 1.1fr); }
+.auth-side { position:relative; overflow:hidden; border-right:1px solid var(--line); background:var(--ink-1); padding:var(--s8); display:flex; flex-direction:column; justify-content:space-between; }
+.auth-side::after { content:""; position:absolute; inset:auto -20% -30% -20%; height:70%; background:radial-gradient(420px 220px at 30% 60%, rgb(154 166 255 / .12), transparent 70%), radial-gradient(380px 200px at 70% 80%, rgb(240 165 98 / .09), transparent 70%); pointer-events:none; }
+.auth-side blockquote { margin:0; position:relative; z-index:1; max-width:40ch; }
+.auth-side blockquote p { font-size:1.375rem; line-height:1.4; letter-spacing:-.015em; font-weight:500; text-wrap:balance; }
+.auth-side .ledger { position:relative; z-index:1; margin-top:var(--s6); border:1px solid var(--line); border-radius:var(--r-panel); background:var(--ink-2); font-size:var(--fs-13); }
+.auth-side .ledger div { display:flex; justify-content:space-between; gap:var(--s4); padding:10px 14px; border-top:1px solid var(--line); }
+.auth-side .ledger div:first-child { border-top:0; }
+.auth-main { display:flex; align-items:center; justify-content:center; padding:var(--s8) var(--s6); }
+.auth-card { width:100%; max-width:380px; }
+.auth-card h1 { font-size:1.625rem; letter-spacing:-.025em; }
+.auth-card .sub { margin-top:var(--s2); color:var(--fg-2); }
+.auth-card form { margin-top:var(--s8); display:grid; gap:var(--s5); }
+.pw { position:relative; }
+.pw .input { padding-right:44px; }
+.pw button { position:absolute; right:4px; top:4px; height:32px; width:36px; border:0; border-radius:4px; background:transparent; color:var(--fg-3); cursor:pointer; display:grid; place-items:center; }
+.pw button:hover { color:var(--fg); background:var(--ink-3); }
+.auth-card .btn-primary { width:100%; height:42px; }
+.auth-card .switch { margin-top:var(--s6); color:var(--fg-2); font-size:var(--fs-13); }
+.auth-card .switch a { color:var(--fg); }
+.auth-card .demo { margin-top:var(--s6); }
+@media (max-width: 860px) { .auth { grid-template-columns:1fr; } .auth-side { display:none; } .auth-main { align-items:flex-start; padding-top:var(--s12); } }

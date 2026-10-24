@@ -1,0 +1,46 @@
+DB data/smoke2.db: 110 gateway calls, 10 cards
+
+teacher: calls=70 tokens_in=36371 tokens_out=5908 latency p50=1634ms p95=2491ms max=5004ms
+  extract       first-shot pass 10/10  tokens in/out 282/102  p50 1883ms
+  policy_check  first-shot pass 9/10  tokens in/out 727/92  p50 1840ms
+  form_fill     first-shot pass 7/10  tokens in/out 709/69  p50 1472ms
+  summary       first-shot pass 10/10  tokens in/out 329/68  p50 1526ms
+
+shadow: calls=40 tokens_in=24161 tokens_out=5949 latency p50=477ms p95=768ms max=859ms
+  extract       first-shot pass 4/10  tokens in/out 374/155  p50 499ms
+  policy_check  first-shot pass 4/10  tokens in/out 819/176  p50 500ms
+  form_fill     first-shot pass 4/10  tokens in/out 801/165  p50 629ms
+  summary       first-shot pass 10/10  tokens in/out 421/99  p50 404ms
+
+kept (record=full) per sub-task: {'extract': 7, 'policy_check': 7, 'form_fill': 6, 'summary': 7}
+keep replays re-verified: 26 / 27
+resamples: 3 passed 0
+ correction {'status': 'kept_unverified_rate_bad', 'subtask': 'form_fill', 'n': 1}
+ correction {'status': 'needs_human', 'subtask': 'form_fill', 'n': 1}
+
+provider cost est $0.135 (gpt-6-sol $2/$10, gpt-oss-20b $0.075/$0.30 per Mtok); Mubit runs 110 x $0.005 = $0.55
+per phone call, 4 sub-tasks single shot, provider tokens only at 75p/$: frontier 0.555p, open model 0.0270p; Mubit adds 0.375p per call made
+
+failures (first shot):
+  shadow  extract      call-v1-0000-6305 ["child", "self_correction"] wrong=["is_new_patient"]
+  shadow  policy_check call-v1-0000-6305 ["child", "self_correction"] wrong=["rule_ids"]
+  shadow  policy_check call-v1-0002-8832 ["new_patient"] wrong=["decision", "rule_ids"]
+  teacher form_fill    call-v1-0002-8832 ["new_patient"] wrong=["treatment"]
+  shadow  form_fill    call-v1-0002-8832 ["new_patient"] wrong=["action", "treatment", "start", "duration_min", "price_gbp"]
+  shadow  extract      call-v1-0003-8216 [] wrong=["treatment"]
+  shadow  extract      call-v1-0004-6842 [] wrong=["treatment"]
+  shadow  extract      call-v1-0007-9872 ["child"] wrong=["treatment"]
+  shadow  form_fill    call-v1-0007-9872 ["child"] wrong=["treatment", "guardian_required"]
+  shadow  policy_check call-v1-0008-8344 ["child", "new_patient"] wrong=["decision", "rule_ids"]
+  shadow  form_fill    call-v1-0008-8344 ["child", "new_patient"] wrong=["action", "treatment", "start", "duration_min", "price_gbp"]
+  shadow  extract      call-v1-0009-5083 ["child", "self_correction"] wrong=["is_new_patient"]
+  shadow  policy_check call-v1-0009-5083 ["child", "self_correction"] wrong=["decision", "rule_ids"]
+  shadow  form_fill    call-v1-0009-5083 ["child", "self_correction"] wrong=["action", "start", "duration_min"]
+  shadow  form_fill    call-v1-0001-7233 ["late_change"] wrong=["fee_gbp"]
+  shadow  policy_check call-v1-0006-1647 ["late_change"] wrong=["decision", "rule_ids", "fee_gbp"]
+  teacher form_fill    call-v1-0006-1647 ["late_change"] wrong=["fee_gbp"]
+  shadow  form_fill    call-v1-0006-1647 ["late_change"] wrong=["fee_gbp"]
+  shadow  extract      call-v1-0010-3207 ["new_patient", "relative_date"] wrong=["intent", "preferred_date"]
+  teacher policy_check call-v1-0010-3207 ["new_patient", "relative_date"] wrong=["rule_ids"]
+  shadow  policy_check call-v1-0010-3207 ["new_patient", "relative_date"] wrong=["decision", "rule_ids"]
+  teacher form_fill    call-v1-0010-3207 ["new_patient", "relative_date"] wrong=["treatment"]

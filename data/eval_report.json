@@ -1,0 +1,142 @@
+{
+  "n_heldout": 42,
+  "mode": "mock",
+  "subtasks": {
+    "extract": {
+      "teacher": {
+        "available": true,
+        "n": 42,
+        "accuracy": 0.857,
+        "pence_per_call": 0.0501,
+        "latency_ms": 685.3,
+        "red_flag_accuracy": null
+      },
+      "shadow": {
+        "available": true,
+        "n": 42,
+        "accuracy": 0.667,
+        "pence_per_call": 0.0076,
+        "latency_ms": 220.8,
+        "red_flag_accuracy": null
+      },
+      "adapter_raw": {
+        "available": true,
+        "n": 42,
+        "accuracy": 0.905,
+        "pence_per_call": 0.0076,
+        "latency_ms": 185.0,
+        "red_flag_accuracy": null
+      },
+      "adapter_verified": {
+        "available": true,
+        "n": 42,
+        "accuracy": 1.0,
+        "pence_per_call": 0.0076,
+        "latency_ms": 185.2,
+        "red_flag_accuracy": null
+      }
+    },
+    "policy_check": {
+      "teacher": {
+        "available": true,
+        "n": 42,
+        "accuracy": 0.881,
+        "pence_per_call": 0.0589,
+        "latency_ms": 689.1,
+        "red_flag_accuracy": null
+      },
+      "shadow": {
+        "available": true,
+        "n": 42,
+        "accuracy": 0.714,
+        "pence_per_call": 0.0108,
+        "latency_ms": 223.3,
+        "red_flag_accuracy": null
+      },
+      "adapter_raw": {
+        "available": true,
+        "n": 42,
+        "accuracy": 0.857,
+        "pence_per_call": 0.0107,
+        "latency_ms": 192.8,
+        "red_flag_accuracy": null
+      },
+      "adapter_verified": {
+        "available": true,
+        "n": 42,
+        "accuracy": 0.976,
+        "pence_per_call": 0.0107,
+        "latency_ms": 193.2,
+        "red_flag_accuracy": null
+      }
+    },
+    "form_fill": {
+      "teacher": {
+        "available": true,
+        "n": 42,
+        "accuracy": 0.905,
+        "pence_per_call": 0.065,
+        "latency_ms": 696.0,
+        "red_flag_accuracy": null
+      },
+      "shadow": {
+        "available": true,
+        "n": 42,
+        "accuracy": 0.714,
+        "pence_per_call": 0.0114,
+        "latency_ms": 223.9,
+        "red_flag_accuracy": null
+      },
+      "adapter_raw": {
+        "available": true,
+        "n": 42,
+        "accuracy": 0.952,
+        "pence_per_call": 0.0114,
+        "latency_ms": 192.9,
+        "red_flag_accuracy": null
+      },
+      "adapter_verified": {
+        "available": true,
+        "n": 42,
+        "accuracy": 1.0,
+        "pence_per_call": 0.0114,
+        "latency_ms": 191.9,
+        "red_flag_accuracy": null
+      }
+    },
+    "summary": {
+      "teacher": {
+        "available": true,
+        "n": 42,
+        "accuracy": 0.81,
+        "pence_per_call": 0.033,
+        "latency_ms": 684.3,
+        "red_flag_accuracy": null
+      },
+      "shadow": {
+        "available": true,
+        "n": 42,
+        "accuracy": 0.643,
+        "pence_per_call": 0.0054,
+        "latency_ms": 220.4,
+        "red_flag_accuracy": null
+      },
+      "adapter_raw": {
+        "available": true,
+        "n": 42,
+        "accuracy": 0.833,
+        "pence_per_call": 0.0054,
+        "latency_ms": 187.5,
+        "red_flag_accuracy": null
+      },
+      "adapter_verified": {
+        "available": true,
+        "n": 42,
+        "accuracy": 0.976,
+        "pence_per_call": 0.0054,
+        "latency_ms": 187.5,
+        "red_flag_accuracy": null
+      }
+    }
+  }
+}

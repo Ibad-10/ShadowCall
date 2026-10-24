@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sign in · ShadowCall</title>
+<link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/static/css/tokens.css">
+<link rel="stylesheet" href="/static/css/base.css">
+<link rel="stylesheet" href="/static/css/auth.css">
+<script type="module" src="/static/js/auth.js"></script>
+</head>
+<body data-mode="login">
+<div class="auth">
+  <aside class="auth-side" aria-hidden="true">
+    <a class="mark" href="/"><img src="/static/favicon.svg" alt="" width="22" height="22">ShadowCall</a>
+    <div>
+      <blockquote><p>The small model never answers a caller until it has been right, on calls it has never seen, as often as the frontier.</p></blockquote>
+      <div class="ledger mono">
+        <div><span class="faint">extract</span><span class="badge b-switched">switched</span></div>
+        <div><span class="faint">policy_check</span><span class="badge b-shadow">shadow</span></div>
+        <div><span class="faint">form_fill · kept</span><span>14 / 25</span></div>
+      </div>
+    </div>
+    <span class="faint" style="font-size:12px;position:relative;z-index:1">Riverside Dental is fictional demo data.</span>
+  </aside>
+  <main class="auth-main" id="main">
+    <div class="auth-card">
+      <a class="mark" href="/" style="margin-bottom:28px" aria-label="ShadowCall home"><img src="/static/favicon.svg" alt="" width="22" height="22">ShadowCall</a>
+      <h1>Sign in</h1>
+      <p class="sub">Welcome back. Your sub-tasks kept working while you were away.</p>
+      <form novalidate data-form>
+        <div class="notice bad" role="alert" data-error hidden><svg class="icon" aria-hidden="true"><use href="/static/icons.svg#i-triangle-alert"/></svg><span class="grow" data-error-text></span></div>
+        <div class="field"><label for="email">Work email</label><input class="input" id="email" name="email" type="email" autocomplete="email" required spellcheck="false" placeholder="you@practice.co.uk"></div>
+        <div class="field"><label for="password">Password</label><div class="pw"><input class="input" id="password" name="password" type="password" autocomplete="current-password" required minlength="10"><button type="button" data-reveal aria-label="Show password" aria-pressed="false"><svg class="icon" aria-hidden="true"><use href="/static/icons.svg#i-eye"/></svg></button></div></div>
+        <button class="btn btn-primary" type="submit" data-submit>Sign in</button>
+      </form>
+      <p class="switch">New here? <a href="/signup">Create an account</a></p>
+    </div>
+  </main>
+</div>
+</body>
+</html>

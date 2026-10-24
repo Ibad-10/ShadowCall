@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Console · ShadowCall</title>
+<link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
+<link rel="preload" href="/static/fonts/plex-sans.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/static/fonts/jetbrains-mono.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="/static/css/tokens.css">
+<link rel="stylesheet" href="/static/css/base.css">
+<link rel="stylesheet" href="/static/css/app.css">
+<link rel="stylesheet" href="/static/css/console-guide.css">
+<script type="module" src="/static/js/app.js"></script>
+</head>
+<body>
+<a class="skip" href="#content">Skip to content</a>
+<div class="shell" data-shell>
+  <aside class="side" id="sidebar" aria-label="Main">
+    <a class="mark" href="/app" data-nav><img src="/static/favicon.svg" alt="" width="22" height="22"><span>ShadowCall</span></a>
+    <nav class="nav" aria-label="Console">
+      <a href="/app/guide" data-nav data-route="guide"><svg class="icon" aria-hidden="true"><use href="/static/icons.svg#i-route"/></svg><span>How it works</span><kbd>g h</kbd></a>
+      <a href="/app" data-nav data-route="overview"><svg class="icon" aria-hidden="true"><use href="/static/icons.svg#i-layout-dashboard"/></svg><span>Overview</span><kbd>g o</kbd></a>
+      <a href="/app/calls" data-nav data-route="calls"><svg class="icon" aria-hidden="true"><use href="/static/icons.svg#i-phone-call"/></svg><span>Calls</span><kbd>g c</kbd></a>
+      <a href="/app/disagreements" data-nav data-route="disagreements"><svg class="icon" aria-hidden="true"><use href="/static/icons.svg#i-git-compare"/></svg><span>Disagreements</span><b class="count" data-count="dis" hidden></b></a>
+      <a href="/app/corrections" data-nav data-route="corrections"><svg class="icon" aria-hidden="true"><use href="/static/icons.svg#i-wrench"/></svg><span>Corrections</span><b class="count hot" data-count="fix" hidden></b></a>
+      <a href="/app/try" data-nav data-route="try"><svg class="icon" aria-hidden="true"><use href="/static/icons.svg#i-audio-waveform"/></svg><span>Try a call</span><kbd>g t</kbd></a>
+      <div class="nav-label">Control</div>
+      <a href="/app/gate" data-nav data-route="gate"><svg class="icon" aria-hidden="true"><use href="/static/icons.svg#i-layers"/></svg><span>Promotion gate</span><kbd>g g</kbd></a>
+      <a href="/app/policy" data-nav data-route="policy"><svg class="icon" aria-hidden="true"><use href="/static/icons.svg#i-scroll-text"/></svg><span>Policy</span><kbd>g p</kbd></a>
+      <a href="/app/evaluation" data-nav data-route="evaluation"><svg class="icon" aria-hidden="true"><use href="/static/icons.svg#i-flask-conical"/></svg><span>Evaluation</span><kbd>g e</kbd></a>
+      <a href="/app/settings" data-nav data-route="settings"><svg class="icon" aria-hidden="true"><use href="/static/icons.svg#i-settings"/></svg><span>Settings</span><kbd>g s</kbd></a>
+    </nav>
+    <div class="side-foot">
+      <button class="tour-start" type="button" data-tour-start><svg class="icon" aria-hidden="true"><use href="/static/icons.svg#i-compass"/></svg><span>Take the 1-minute tour</span></button>
+      <div class="who"><span class="avatar" data-avatar>·</span><span class="meta"><b data-user-name>Loading…</b><span data-user-email></span></span><button class="icon-btn" type="button" data-logout aria-label="Sign out" title="Sign out"><svg class="icon" aria-hidden="true"><use href="/static/icons.svg#i-log-out"/></svg></button></div>
+    </div>
+  </aside>
+  <div class="scrim" data-scrim></div>
+  <div class="main">
+    <header class="top">
+      <button class="icon-btn menu-btn" type="button" data-menu aria-label="Open navigation" aria-controls="sidebar" aria-expanded="false"><svg class="icon" aria-hidden="true"><use href="/static/icons.svg#i-menu"/></svg></button>
+      <div class="crumbs" data-crumbs></div>
+      <div class="spacer"></div>
+      <button class="btn btn-sm btn-ghost" type="button" data-explain-open hidden><svg class="icon" aria-hidden="true"><use href="/static/icons.svg#i-circle-help"/></svg><span class="long">What am I looking at?</span></button>
+      <span class="pill" data-policy-pill hidden></span>
+      <span class="pill" data-mode-pill hidden></span>
+    </header>
+    <main class="content" id="content" tabindex="-1" aria-live="polite" aria-busy="true"></main>
+  </div>
+</div>
+<div data-tour hidden></div>
+<div class="toasts" role="status" aria-live="polite" data-toasts></div>
+<dialog class="confirm" data-confirm aria-labelledby="confirm-title">
+  <form method="dialog">
+    <div class="in"><h2 id="confirm-title" data-confirm-title></h2><p data-confirm-body></p></div>
+    <footer><button class="btn" value="cancel">Cancel</button><button class="btn btn-danger" value="ok" data-confirm-ok>Confirm</button></footer>
+  </form>
+</dialog>
+</body>
+</html>

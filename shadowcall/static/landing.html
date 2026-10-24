@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ShadowCall: teach a cheap AI to answer the phone, safely</title>
+<meta name="description" content="ShadowCall lets a small, cheap AI model learn from an expensive one on real phone calls. A rule checker marks both, and each job switches over only when the small model proves it is just as good.">
+<link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
+<link rel="preload" href="/static/fonts/plex-sans.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="/static/css/tokens.css">
+<link rel="stylesheet" href="/static/css/base.css">
+<link rel="stylesheet" href="/static/css/console-guide.css">
+<link rel="stylesheet" href="/static/css/landing.css">
+<script type="module" src="/static/js/landing.js"></script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="l-nav">
+  <div class="l-wrap">
+    <a class="mark" href="/" aria-label="ShadowCall home"><img src="/static/favicon.svg" alt="" width="22" height="22">ShadowCall</a>
+    <nav aria-label="Sections"><a href="#idea">The idea</a><a href="#how">How it works</a><a href="#safety">Safety</a><a href="#faq">Questions</a></nav>
+    <div class="right" data-auth-slot>
+      <a class="btn btn-ghost" href="/login">Sign in</a>
+      <a class="btn btn-primary" href="/signup">Get started</a>
+    </div>
+  </div>
+</header>
+<main id="main">
+  <section class="hero">
+    <div class="l-wrap">
+      <div class="hero-copy">
+        <span class="eyebrow"><svg class="icon" aria-hidden="true"><use href="/static/icons.svg#i-phone-incoming"/></svg>For AI phone agents</span>
+        <h1>Teach a cheap AI to answer the phone. <em>Switch only when it's proved.</em></h1>
+        <p class="lead">Your phone agent runs on a big, expensive AI model. ShadowCall lets a small, cheap model listen in and learn. A rule checker marks both answers. Each job moves to the small model only after it scores just as well on calls it has never seen.</p>
+        <div class="ctas">
+          <a class="btn btn-primary btn-lg" href="/signup">Open the console <svg class="icon" aria-hidden="true"><use href="/static/icons.svg#i-arrow-right"/></svg></a>
+          <a class="btn btn-lg" href="#how"><svg class="icon" aria-hidden="true"><use href="/static/icons.svg#i-circle-play"/></svg>See the six steps</a>
+        </div>
+        <p class="fine">Callers never wait for the small model. Until a job switches, it only answers in the background.</p>
+      </div>
+
+      <figure class="demo" data-demo aria-label="An example call. The big model answers, the small model answers quietly, a rule checker marks both, and the gate switches a job to the small model.">
+        <div class="demo-head"><span class="live-dot" aria-hidden="true"></span><span>Example call · Riverside Dental</span><span class="mono demo-timer" data-demo-timer>00:00</span></div>
+        <div class="chat" aria-hidden="true">
+          <div class="bub caller" data-b="1"><span class="who">Caller</span>Hi, I'd like a check-up for my son. He's a new patient.</div>
+          <div class="bub agent" data-b="2"><span class="who">Agent</span>Of course. Tuesday at 10:30? And may I take your name, as his parent?</div>
+          <div class="bub caller" data-b="3"><span class="who">Caller</span>Yes, it's Sam Patel. Thanks!</div>
+          <div class="typing" data-typing><i></i><i></i><i></i></div>
+        </div>
+        <div class="lanes" aria-hidden="true">
+          <div class="lane-row f"><span class="lname">Big model<small>answers the caller</small></span>
+            <span class="jobs"><i style="--i:0">Understand</i><i style="--i:1">Rules</i><i style="--i:2">Form</i><i style="--i:3">Summary</i></span>
+            <span class="mark-res" data-res="f"><svg class="icon" aria-hidden="true"><use href="/static/icons.svg#i-check"/></svg>4/4</span></div>
+          <div class="lane-row s"><span class="lname">Small model<small>answers quietly</small></span>
+            <span class="jobs"><i style="--i:0">Understand</i><i style="--i:1">Rules</i><i style="--i:2">Form</i><i style="--i:3">Summary</i></span>
+            <span class="mark-res" data-res="s"><svg class="icon" aria-hidden="true"><use href="/static/icons.svg#i-check"/></svg>4/4</span></div>
+        </div>
+        <div class="demo-foot" aria-hidden="true">
+          <div class="checker"><svg class="icon" aria-hidden="true"><use href="/static/icons.svg#i-shield-check"/></svg><span>Rule checker: <b data-check>listening…</b></span></div>
+          <div class="gate-mini"><span class="lbl">Understand the caller</span><span class="switch" data-demo-switch><span class="big">Big</span><span class="sm">Small</span></span></div>
+        </div>
+        <figcaption class="faint">Illustration. The real console shows every call like this.</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <section class="strip" id="numbers" aria-labelledby="numbers-title">
+    <div class="live-wrap"><div class="l-wrap live"><span class="dot" data-live-dot></span><span id="numbers-title" data-live-label>Reading this server's numbers…</span></div></div>
+    <div class="l-wrap cells">
+      <div class="cell"><div class="v" data-m="calls">-</div><div class="k">calls handled</div></div>
+      <div class="cell"><div class="v" data-m="switched">-</div><div class="k">jobs now on the small model</div></div>
+      <div class="cell"><div class="v" data-m="pass">-</div><div class="k">big-model answers the checker marked right</div></div>
+      <div class="cell"><div class="v" data-m="pence">-</div><div class="k">pence per call: before → now</div></div>
+    </div>
+  </section>
+
+  <section class="section" id="idea">
+    <div class="l-wrap">
+      <span class="eyebrow"><svg class="icon" aria-hidden="true"><use href="/static/icons.svg#i-lightbulb"/></svg>The idea</span>
+      <h2>Big AI models are clever but costly. Small ones are cheap but untested.</h2>
+      <p class="intro">Every phone call to a voice agent costs money, because a big AI model does all the thinking. A small model could do much of it for a fraction of the price. The hard part is knowing <b>when</b> it's safe to trust it. ShadowCall answers that with evidence, one job at a time.</p>
+      <div class="compare">
+        <div class="cmp before"><h3><svg class="icon" aria-hidden="true"><use href="/static/icons.svg#i-bot"/></svg>Today</h3><ul><li>The big model answers every call.</li><li>Every call costs the full price.</li><li>Nobody checks its answers against the rules.</li></ul></div>
+        <div class="cmp after"><h3><svg class="icon" aria-hidden="true"><use href="/static/icons.svg#i-sparkles"/></svg>With ShadowCall</h3><ul><li>A small model learns by watching, quietly.</li><li>A rule checker marks both models on every call.</li><li>Each job switches only when the small one has proved itself. Then that job costs much less.</li></ul></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="how" style="padding-top:0">
+    <div class="l-wrap">
+      <span class="eyebrow"><svg class="icon" aria-hidden="true"><use href="/static/icons.svg#i-route"/></svg>How it works</span>
+      <h2>Six steps on every call.</h2>
+      <p class="intro">Click a step to read about it, or let it play. A call is split into four jobs: understand the caller, check the rules, fill the booking form, and write the summary. Each job earns its switch on its own.</p>
+      <div class="flow-wrap" data-flow-root></div>
+    </div>
+  </section>
+
+  <section class="section" id="safety" style="padding-top:0">
+    <div class="l-wrap split">
+      <div>
+        <span class="eyebrow"><svg class="icon" aria-hidden="true"><use href="/static/icons.svg#i-shield-check"/></svg>Safety</span>
+        <h2>It says no until the evidence says yes.</h2>
+        <p class="intro">Agreeing with the big model isn't enough. The small model has to be right by the practice's own rules.</p>
+        <div class="rules"><ul>
+          <li><svg class="icon" aria-hidden="true"><use href="/static/icons.svg#i-circle-check"/></svg><div><b>A fair test.</b> <span>The score comes from test calls the small model never learned from.</span></div></li>
+          <li><svg class="icon" aria-hidden="true"><use href="/static/icons.svg#i-circle-check"/></svg><div><b>Emergencies come first.</b> <span>Missing one emergency call, even once, blocks a switch.</span></div></li>
+          <li><svg class="icon" aria-hidden="true"><use href="/static/icons.svg#i-circle-check"/></svg><div><b>New rules, new test.</b> <span>Change the booking rules and every job goes back to the big model until it passes again.</span></div></li>
+          <li><svg class="icon" aria-hidden="true"><use href="/static/icons.svg#i-circle-check"/></svg><div><b>People have the last word.</b> <span>Mistakes the big model can't fix wait for a person to approve.</span></div></li>
+          <li><svg class="icon" aria-hidden="true"><use href="/static/icons.svg#i-circle-check"/></svg><div><b>Still watched after a switch.</b> <span>The big model spot-checks 1 in 5 switched calls. If scores drop, the job switches back by itself.</span></div></li>
+        </ul></div>
+      </div>
+      <div class="gate-demo" aria-label="Example promotion gate">
+        <header><span><svg class="icon" aria-hidden="true"><use href="/static/icons.svg#i-layers"/></svg>Who answers each job</span><span class="faint" style="font-weight:400;font-size:12px">Illustrative</span></header>
+        <div class="row"><span>Understand the caller</span><div class="bar2"><i class="f" style="--w:91%"></i><i class="s" style="--w:94%"></i></div><span class="switch small"><span class="big">Big</span><span class="sm">Small</span></span></div>
+        <div class="row"><span>Check the rules</span><div class="bar2"><i class="f" style="--w:84%"></i><i class="s" style="--w:71%"></i></div><span class="switch"><span class="big">Big</span><span class="sm">Small</span></span></div>
+        <div class="row"><span>Fill the booking form</span><div class="bar2"><i class="f" style="--w:80%"></i><i class="s" style="--w:83%"></i></div><span class="switch small"><span class="big">Big</span><span class="sm">Small</span></span></div>
+        <div class="row"><span>Write the summary</span><div class="bar2"><i class="f" style="--w:88%"></i><i class="s" style="--w:64%"></i></div><span class="switch"><span class="big">Big</span><span class="sm">Small</span></span></div>
+        <div class="row legend-row faint"><span class="lane lane-frontier">Big model score</span><span class="lane lane-small">Small model score</span><span>Small wins → switch</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="faq" style="padding-top:0">
+    <div class="l-wrap">
+      <span class="eyebrow"><svg class="icon" aria-hidden="true"><use href="/static/icons.svg#i-circle-help"/></svg>Questions</span>
+      <h2>Plain answers.</h2>
+      <div class="faq">
+        <details><summary>Who answers the caller while the small model learns?</summary><p>The big model, exactly as today. The small model's answers are only compared, never heard, until its job switches.</p></details>
+        <details><summary>What is the "rule checker"?</summary><p>Plain code built from the practice's booking rules, such as opening hours, prices, and “new patients need a check-up first”. It isn't another AI, so it can't be talked round. It marks each answer right or wrong.</p></details>
+        <details><summary>What happens when the big model is wrong?</summary><p>It's shown the checker's note and asked again. If the new answer is right, it's saved as a learning example. If not, it waits for a person. So the small model learns from right answers only.</p></details>
+        <details><summary>What is Mubit's part?</summary><p>Mubit is the gateway both models go through. It collects the checked examples and, once a job has 25 of them, it can train the small model on them.</p></details>
+        <details><summary>Are the numbers on this page real?</summary><p>They come live from this server. In mock mode both models are simulated, which tests the pipeline but isn't a result. The page says which mode it's in.</p></details>
+        <details><summary>Can a job go back to the big model?</summary><p>Yes. In one click from the console, on its own if spot-check scores drop, and always when the rules change.</p></details>
+      </div>
+    </div>
+  </section>
+
+  <section class="cta">
+    <div class="l-wrap">
+      <h2>See which jobs are ready to switch.</h2>
+      <div class="ctas" style="display:flex;gap:12px;flex-wrap:wrap"><a class="btn btn-primary btn-lg" href="/signup">Create an account</a><a class="btn btn-lg" href="/login">Sign in</a></div>
+    </div>
+  </section>
+</main>
+<footer class="l-foot"><div class="l-wrap"><span>ShadowCall · Riverside Dental is a made-up practice used for the demo.</span><span>Built for the Mubit Night Shift.</span></div></footer>
+</body>
+</html>
