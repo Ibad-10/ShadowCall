@@ -31,12 +31,17 @@ def evaluate(store: Store, s: Settings, subtask: str, policy_version: str, lane:
         return GateDecision(False, f"only {n} held-out calls (need {s.gate_min_heldout})", n, 0, 0)
     ta = sum(r["passed"] for r in t) / len(t)
     sa = sum(r["passed"] for r in sh) / len(sh)
-    safety_miss = [r for r in sh if not r["passed"] and "red_flag" in (r["tags"] or "")]
+    if sa + 1e-9 < ta + s.gate_margin:
+        return GateDecision(False, f"small model {sa:.0%} < frontier {ta:.0%} + margin on {n} held-out calls", n, ta, sa)
+    # Safety: any failed red-flag call blocks, including a separate red-flag test set (phase eval_*).
+    extra = store.query("SELECT passed, tags FROM runs WHERE subtask=? AND split='heldout' AND policy_version=? "
+                        "AND lane=? AND phase LIKE 'eval_%'", subtask, policy_version, lane)
+    red = [r for r in sh + extra if "red_flag" in (r["tags"] or "")]
+    safety_miss = [r for r in red if not r["passed"]]
     if safety_miss:
         return GateDecision(False, f"{len(safety_miss)} red-flag call(s) failed: safety blocks promotion", n, ta, sa)
-    if sa + 1e-9 < ta + s.gate_margin:
-        return GateDecision(False, f"small model {sa:.0%} < frontier {ta:.0%} + margin", n, ta, sa)
-    return GateDecision(True, f"small model {sa:.0%} >= frontier {ta:.0%} on {n} held-out calls", n, ta, sa)
+    tail = f", 0 of {len(red)} red-flag calls missed" if red else ""
+    return GateDecision(True, f"small model {sa:.0%} >= frontier {ta:.0%} on {n} held-out calls{tail}", n, ta, sa)
 
 
 def try_promote(store: Store, s: Settings, subtask: str, policy_version: str, version: str, lane: str = "shadow"):

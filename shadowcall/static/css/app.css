@@ -98,7 +98,7 @@ table.tbl { width:100%; border-collapse:separate; border-spacing:0; font-size:va
 
 /* Sub-task gate rows */
 .gates { display:grid; }
-.gate-row { display:grid; grid-template-columns:minmax(180px, 1.2fr) 150px minmax(190px, 1.4fr) minmax(170px, 1fr) auto; gap:16px; align-items:center; padding:14px 16px; border-top:1px solid var(--line); }
+.gate-row { display:grid; grid-template-columns:minmax(140px, 1.2fr) 140px minmax(140px, 1.4fr) minmax(120px, 1fr) auto; gap:14px; align-items:center; padding:14px 16px; border-top:1px solid var(--line); }
 .gate-row:first-child { border-top:0; }
 .gate-row .name { font:500 var(--fs-13) var(--mono); }
 .gate-row .why { font-size:var(--fs-12); color:var(--fg-3); margin-top:3px; white-space:normal; }
@@ -275,3 +275,4 @@ dialog.confirm footer { display:flex; justify-content:flex-end; gap:8px; padding
   .search { max-width:none; }
   .search kbd { display:none; }
 }
+.gate-row > * { min-width:0; }

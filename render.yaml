@@ -11,7 +11,7 @@ services:
       sizeGB: 1
     envVars:
       - key: SHADOWCALL_MODE
-        value: mock
+        value: replay
       - key: SHADOWCALL_DB
         value: /data/shadowcall.db
       - key: SHADOWCALL_SIGNUP

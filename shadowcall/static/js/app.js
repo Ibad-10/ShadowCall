@@ -137,7 +137,7 @@ async function refreshCounts() {
 /* ---------- views ---------- */
 const views = {};
 
-const PHASE = { train: "Practice call", eval: "Test call", live: "Live call", keep: "Practice call", correct: "Correction", keep_correction: "Correction", chat: "Typed call", voice: "Phone call" };
+const PHASE = { train: "Practice call", eval: "Test call", live: "Live call", keep: "Practice call", correct: "Correction", keep_correction: "Correction", eval_redflag: "Red-flag test call", eval_base: "Test call", chat: "Typed call", voice: "Phone call" };
 function feedRow(r, isNew) {
   const tone = !r.small_runs ? "" : r.small_passed === r.small_runs ? "ok" : r.small_passed ? "warn" : "bad";
   return `<a class="feed-row ${isNew ? "new" : ""}" href="/app/calls/${encodeURIComponent(r.id)}" data-nav>
@@ -195,6 +195,7 @@ views.overview = {
       live: subs.some(([, v]) => (v.live || []).length),
     };
     const hasData = did.train || did.eval || did.live;
+    const rp = sm.replay;
     const saving = pp.as_served != null && pp.all_frontier ? 1 - pp.as_served / pp.all_frontier : null;
     const lastIsNew = ctx.feedCursor;
     ctx.feedCursor = Math.max(ctx.feedCursor, feed.cursor);
@@ -211,7 +212,14 @@ views.overview = {
         ${did[k] ? `<span class="faint" style="font-size:12px">Done</span>` : `<button class="btn ${k === nextKey ? "btn-primary" : ""} btn-sm" data-run="${k}">${icon(ic)}${lbl}</button>`}</div>`).join("")}</div></div>`;
 
     const kpi = (k, t, v, d) => `<div class="kpi"><div class="k">${k}${tip(t, "tip-down")}</div><div class="v">${v}</div><div class="d">${d}</div></div>`;
-    const kpis = `<div class="kpis">
+    const ms = (x) => (x >= 1000 ? `${(x / 1000).toFixed(1)} s` : `${Math.round(x)} ms`);
+    const kpis = rp ? `<div class="kpis">
+      ${kpi("Cost per call", TIPS.cost, `${pence(rp.pence_served)}<small>from ${pence(rp.pence_frontier)}</small>`, `<span class="up">${pct(1 - rp.pence_served / rp.pence_frontier)} cheaper</span> with ${switched} job${switched === 1 ? "" : "s"} switched, from ${rp.heldout_calls} real test calls`)}
+      ${kpi("Jobs on the small model", TIPS.switched, `${switched}<small>of ${subs.length}</small>`, `${subs.length - switched} stay on the big model`)}
+      ${kpi("Time per call", "The middle time for each of the 4 jobs on the real test calls, added up. The big model's and the small model's replies came back through Mubit.", `${ms(rp.latency_ms_served)}<small>from ${ms(rp.latency_ms_frontier)}</small>`, "Real Mubit round trips")}
+      ${kpi("Small model test score", TIPS.pass, avg(sAcc) != null ? pct(avg(sAcc)) : "–", avg(fAcc) != null ? `Big model scored ${pct(avg(fAcc))} on ${rp.heldout_calls} test calls` : "")}
+      ${kpi("Models agree", TIPS.agree, rp.pairs ? pct(rp.agree / rp.pairs) : "–", `${rp.pairs - rp.agree} disagreements in ${rp.pairs} checks`)}
+    </div>` : `<div class="kpis">
       ${kpi("Cost per call", TIPS.cost, `${pp.as_served != null ? pence(pp.as_served) : pence(pp.all_frontier)}${pp.as_served != null ? `<small>from ${pence(pp.all_frontier)}</small>` : ""}`, saving != null ? `<span class="up">${pct(saving)} cheaper</span> over ${pp.calls} live calls` : "Big model on every job; no live calls yet")}
       ${kpi("Jobs on the small model", TIPS.switched, `${switched}<small>of ${subs.length}</small>`, switched ? `${subs.length - switched} still learning` : "None yet: all 4 still learning")}
       ${kpi("Models agree", TIPS.agree, cmp ? pct(1 - dis / cmp) : "–", cmp ? `${dis} disagreements in ${cmp} checks` : "Shows after live calls")}
@@ -246,14 +254,14 @@ views.overview = {
 
     content.innerHTML = `<div class="ph"><div><h1>Overview</h1><p>How far each of the 4 jobs has got towards being answered by the small model, and what a call costs.</p></div>
       <div class="actions"><a class="btn" href="/app/try" data-nav>${icon("audio-waveform")}Try a call</a><a class="btn btn-primary" href="/app/calls" data-nav>${icon("phone-call")}Browse calls</a></div></div>
-      ${sm.mode !== "live" ? `<div class="notice warn" style="margin-bottom:16px">${icon("info")}<span class="grow">Mock mode. Both models are simulated, so these numbers test the pipeline. They are not results.</span></div>` : ""}
+      ${rp ? `<div class="notice ok" style="margin-bottom:16px">${icon("badge-check")}<span class="grow"><b style="font-weight:500">${esc(rp.label)}</b>. Every number here comes from the real run${rp.spend_usd ? ` (about $${rp.spend_usd.toFixed(2)} of Mubit credit)` : ""}. Training ran only on practice calls; ${rp.heldout_calls} test calls plus ${rp.redflag_calls} red-flag test calls were kept apart for the gate.</span></div>` : sm.mode !== "live" ? `<div class="notice warn" style="margin-bottom:16px">${icon("info")}<span class="grow">Mock mode. Both models are simulated, so these numbers test the pipeline. They are not results.</span></div>` : ""}
       <div style="margin-bottom:16px">${flowStrip}</div>
       ${hasData ? kpis : ""}
-      ${!did.live ? `<div style="margin-bottom:16px">${checklist}</div>` : ""}
+      ${!did.live && !rp ? `<div style="margin-bottom:16px">${checklist}</div>` : ""}
       ${hasData ? `<div class="grid g-3-1">
         <div class="stack"><div class="panel"><header><h2>${icon("layers")}The 4 jobs${tip(TIPS.switch, "tip-down")}</h2><span class="legend"><span><i style="background:var(--frontier)"></i>Big model</span><span><i style="background:var(--small)"></i>Small model</span></span></header><div class="gates">${gates}</div></div>
           <div class="panel"><header><h2>${icon("activity")}What the gate decided</h2></header>${events ? `<div class="events">${events}</div>` : empty("activity", "No decisions yet", "Run the fair test and the gate will decide each job here.", `<button class="btn btn-sm btn-primary" data-run="eval">${icon("flask-conical")}Run the test</button>`)}</div></div>
-        <div class="stack">${feedPanel}${did.live ? runPanel : ""}</div>
+        <div class="stack">${feedPanel}${did.live && !rp ? runPanel : ""}</div>
       </div>` : ""}`;
     startFeed();
   },
@@ -540,7 +548,7 @@ views.evaluation = {
           <td class="num ${ok && d.accuracy === best ? "best" : ""}">${ok ? pct(d.accuracy, 1) : "n/a"}</td><td class="num">${ok ? pence(d.pence_per_call) : "–"}</td><td class="num">${ok && d.latency_ms ? Math.round(d.latency_ms) + " ms" : "–"}</td><td class="num">${d.red_flag_accuracy == null ? "–" : pct(d.red_flag_accuracy)}</td><td class="num faint">${d.n ?? "–"}</td></tr>`;
       }).join("");
     }).join("");
-    content.innerHTML = head + (live ? `<div class="stack" style="margin-bottom:16px">${live}</div>` : "") + (rep.mode !== "live" ? `<div class="notice warn" style="margin-bottom:16px">${icon("info")}<span class="grow">Mock mode: the table below is simulated. Use it to check the pipeline, not to quote results.${live ? " The live panel above is real." : ""}</span></div>` : "") +
+    content.innerHTML = head + (live ? `<div class="stack" style="margin-bottom:16px">${live}</div>` : "") + (rep.mode === "replay" ? `<div class="notice ok" style="margin-bottom:16px">${icon("badge-check")}<span class="grow">${esc(ctx.settings?.replay || "Replaying the real live run")}. The table below is the real held-out test: the big and small models only. The trained-adapter versions were not run.</span></div>` : "") + (rep.mode !== "live" && rep.mode !== "replay" ? `<div class="notice warn" style="margin-bottom:16px">${icon("info")}<span class="grow">Mock mode: the table below is simulated. Use it to check the pipeline, not to quote results.${live ? " The live panel above is real." : ""}</span></div>` : "") +
       `<div class="stack"><div class="panel"><header><h2>${icon("activity")}Test score by job${tip(TIPS.meter, "tip-down")}</h2><span class="legend">${lanes.map((l) => `<span><i style="background:${LANES[l].color}"></i>${LANES[l].label}</span>`).join("")}</span></header><div class="body">${chart(rep)}</div></div>
       <div class="panel"><header><h2>${icon("flask-conical")}Full table</h2><span class="sub">${rep.n_heldout} test calls · marked by the rule checker</span></header><div class="tbl-wrap"><table class="tbl"><thead><tr><th>Job</th><th>Version</th><th class="num">Score</th><th class="num">Pence / call ${tip(TIPS.cost, "tip-down")}</th><th class="num">Speed ${tip(TIPS.latency, "tip-down")}</th><th class="num">Emergencies caught ${tip(TIPS.red, "tip-end tip-down")}</th><th class="num">Calls ${tip(TIPS.n, "tip-end tip-down")}</th></tr></thead><tbody>${rows}</tbody></table></div></div></div>`;
   },
@@ -555,7 +563,7 @@ views.settings = {
     const keyState = (v) => v ? `<span class="key-state yes">${icon("circle-check")}Set</span>` : `<span class="key-state no">${icon("circle-x")}Not set</span>`;
     content.innerHTML = `<div class="ph"><div><h1>Settings</h1><p>Read from the server's environment. Change them in <span class="mono">.env</span> and restart. Key values are never sent to the browser.</p></div></div>
       <div class="grid g-2">
-        <div class="panel"><header><h2>${icon("cpu")}Mode and models</h2>${s.mode === "live" ? `<span class="badge b-ok">live</span>` : `<span class="badge b-warn">mock</span>`}</header>${kv({ mode: s.mode, active_policy: s.policy, frontier_model: s.models.frontier, small_model: s.models.small_label || s.models.small, adapter_model: s.models.adapter || "not configured" })}</div>
+        <div class="panel"><header><h2>${icon("cpu")}Mode and models</h2>${s.mode === "live" ? `<span class="badge b-ok">live</span>` : s.mode === "replay" ? `<span class="badge b-ok">replay</span>` : `<span class="badge b-warn">mock</span>`}</header>${kv({ mode: s.mode, active_policy: s.policy, frontier_model: s.models.frontier, small_model: s.models.small_label || s.models.small, adapter_model: s.models.adapter || "not configured" })}</div>
         <div class="panel"><header><h2>${icon("key-round")}Keys</h2><span class="sub">present or not, never the value</span></header>${kv(s.keys, (v) => keyState(v))}</div>
         <div class="panel"><header><h2>${icon("layers")}Gate</h2></header>${kv(s.gate)}</div>
         <div class="panel"><header><h2>${icon("wrench")}Learning</h2></header>${kv(s.learning)}</div>
@@ -748,8 +756,9 @@ async function loadPills() {
     ctx.settings = s;
     const mp = $("[data-mode-pill]");
     mp.hidden = false;
-    mp.className = `pill ${s.mode === "live" ? "live" : "mock"}`;
-    mp.innerHTML = `<i></i>${s.mode === "live" ? "Live" : "Mock"}<span class="long">${s.mode === "live" ? " · Mubit" : " · simulated"}</span>`;
+    mp.className = `pill ${s.mode === "mock" ? "mock" : "live"}`;
+    mp.innerHTML = `<i></i>${s.mode === "live" ? "Live" : s.mode === "replay" ? "Replay" : "Mock"}<span class="long">${s.mode === "live" ? " · Mubit" : s.mode === "replay" ? " · real run, 24 Oct" : " · simulated"}</span>`;
+    document.body.classList.toggle("replay", s.mode === "replay");
     const pp = $("[data-policy-pill]");
     pp.hidden = false;
     pp.innerHTML = `${icon("scroll-text", "icon")}<span>Policy <b class="mono" style="color:var(--fg);font-weight:500">${esc(s.policy)}</b></span>`;

@@ -79,11 +79,38 @@ class Chat(BaseModel):
     caller_lines: list[str] | None = None
 
 
+def replay_report(st: "State") -> dict:
+    """The Evaluation page's report, built from the real held-out calls (no adapter arms were run)."""
+    from statistics import median
+    from .costs import pence
+    out = {"mode": "replay", "n_heldout": 0, "subtasks": {}}
+    for t in SUBTASKS:
+        arms = {}
+        for lane, arm in (("teacher", "teacher"), ("shadow", "shadow")):
+            rows = st.store.query("SELECT * FROM runs WHERE phase='eval' AND split='heldout' AND subtask=? AND lane=?", t, lane)
+            red = st.store.query("SELECT passed FROM runs WHERE phase LIKE 'eval%' AND split='heldout' AND subtask=? AND "
+                                 "lane=? AND tags LIKE '%red_flag%'", t, lane)
+            if not rows:
+                arms[arm] = {"available": False}
+                continue
+            arms[arm] = {"available": True, "n": len(rows), "accuracy": sum(r["passed"] for r in rows) / len(rows),
+                         "red_flag_n": len(red),
+                         "red_flag_accuracy": (sum(r["passed"] for r in red) / len(red)) if red else None,
+                         "pence_per_call": median(pence(st.s, lane, r["tokens_in"], r["tokens_out"]) for r in rows),
+                         "latency_ms": median(r["latency_ms"] for r in rows)}
+            out["n_heldout"] = max(out["n_heldout"], len(rows))
+        arms["adapter_raw"] = arms["adapter_verified"] = {"available": False, "note": "not run in the live test"}
+        out["subtasks"][t] = arms
+    return out
+
+
 class State:
     def __init__(self, db_path: str | None = None):
         self.s = get_settings()
         if db_path:
             self.s.db_path = db_path
+        elif self.s.replay and not os.environ.get("SHADOWCALL_DB"):
+            self.s.db_path = str(ROOT / "data" / "replay.db")  # never overwrite a mock or live database
         self.store = Store(self.s.db_path)
         self.store.execute("CREATE TABLE IF NOT EXISTS cards (id TEXT PRIMARY KEY, body TEXT)")
         self.last_report: dict | None = None
@@ -91,6 +118,15 @@ class State:
         self.cards: dict[str, list] = {}
         self.demo_card: str | None = None
         self.claims = make_claim_checker(self.s)
+        self.replay: dict | None = None
+        self.clock = None
+        if self.s.replay:
+            from . import replay
+            data = replay.read()
+            self.replay = {"label": replay.label(data), "window": data["window"], "live_results": data.get("live_results"),
+                           "loaded": replay.load(self.store, self.s, data)}
+            self.clock = replay.Clock(self.store, float(os.environ.get("SHADOWCALL_REPLAY_SPEED", "30")))
+            self.last_report = replay_report(self)
 
     def pipeline(self) -> Pipeline:
         return evalh.make_pipeline(self.s, self.store, self.claims)
@@ -195,6 +231,10 @@ def create_app(db_path: str | None = None, auth_enabled: bool | None = None) -> 
     def healthz():
         return {"ok": True, "mode": st.s.mode}
 
+    def read_only():
+        if st.s.replay:
+            raise HTTPException(409, "Replay mode is read-only: it shows the real live run and makes no new calls.")
+
     # -- auth -----------------------------------------------------------------------------------
     def _set_cookie(resp, request: Request, token: str):
         resp.set_cookie(COOKIE, token, max_age=SESSION_DAYS * 86400, httponly=True, samesite="lax",
@@ -281,7 +321,39 @@ def create_app(db_path: str | None = None, auth_enabled: bool | None = None) -> 
         n = max(len(calls), 1)
         out["pence_per_call"] = {"all_frontier": round(all_frontier, 4), "as_served": round(spent / n, 4) if calls else None,
                                  "calls": len(calls), "note": "token prices from env; set them before quoting"}
+        if st.replay:
+            out["replay"] = replay_summary(out)
+            out["pence_per_call"].update(as_served=out["replay"]["pence_served"], all_frontier=out["replay"]["pence_frontier"],
+                                         basis="projected from real held-out calls")
         return out
+
+    def replay_summary(sm: dict) -> dict:
+        """Cost and speed of one whole call from the real held-out test: every job on the big model,
+        against the jobs the gate switched on the small model (plus the audit share on the big one)."""
+        from statistics import median
+        from .costs import pence
+        rep_ = st.last_report or {"subtasks": {}}
+        fr = sv = lat_fr = lat_sv = 0.0
+        for t, arms in rep_["subtasks"].items():
+            a, b = arms["teacher"], arms["shadow"]
+            if not a.get("available"):
+                continue
+            switched = sm["subtasks"][t]["gate"]["state"] == "switched"
+            fr += a["pence_per_call"]
+            lat_fr += a["latency_ms"]
+            sv += (b["pence_per_call"] + st.s.audit_rate * a["pence_per_call"]) if switched else a["pence_per_call"]
+            lat_sv += b["latency_ms"] if switched else a["latency_ms"]
+        q = st.store.query
+        n_rf = q("SELECT COUNT(DISTINCT scenario_id) n FROM runs WHERE phase='eval_redflag'")[0]["n"]
+        n_ev = q("SELECT COUNT(DISTINCT scenario_id) n FROM runs WHERE phase='eval'")[0]["n"]
+        agree = q("SELECT SUM(CASE WHEN t.passed=s.passed THEN 1 ELSE 0 END) a, COUNT(*) n FROM runs t JOIN runs s ON "
+                  "t.scenario_id=s.scenario_id AND t.subtask=s.subtask AND t.phase=s.phase AND s.lane='shadow' "
+                  "WHERE t.lane='teacher' AND t.phase='eval'")[0]
+        return {"label": st.replay["label"], "window": st.replay["window"], "heldout_calls": n_ev, "redflag_calls": n_rf,
+                "pence_frontier": round(fr, 4), "pence_served": round(sv, 4),
+                "latency_ms_frontier": round(lat_fr), "latency_ms_served": round(lat_sv),
+                "agree": agree["a"] or 0, "pairs": agree["n"],
+                "spend_usd": (st.replay.get("live_results") or {}).get("spend_usd_estimate")}
 
     @app.get("/api/disagreements")
     def disagreements(limit: int = 30):
@@ -324,6 +396,7 @@ def create_app(db_path: str | None = None, auth_enabled: bool | None = None) -> 
 
     @app.post("/api/train")
     def train(b: N):
+        read_only()
         pol = b.policy or st.policy
         p = st.pipeline()
         cards = [c for c in st.pool(pol, b.seed, b.n) if c.split == "train"]
@@ -333,6 +406,7 @@ def create_app(db_path: str | None = None, auth_enabled: bool | None = None) -> 
 
     @app.post("/api/eval")
     def run_eval(b: N):
+        read_only()
         pol = b.policy or st.policy
         rep = evalh.run_eval(st.s, st.store, st.pool(pol, b.seed, b.n), st.claims)
         decisions = {}
@@ -346,6 +420,7 @@ def create_app(db_path: str | None = None, auth_enabled: bool | None = None) -> 
 
     @app.post("/api/live")
     def live(b: N):
+        read_only()
         pol = b.policy or st.policy
         p = st.pipeline()
         res = []
@@ -356,6 +431,7 @@ def create_app(db_path: str | None = None, auth_enabled: bool | None = None) -> 
 
     @app.post("/api/policy")
     def set_policy(b: Pol):
+        read_only()
         if b.version not in ("v1", "v2"):
             raise HTTPException(400, "v1 or v2")
         st.policy = b.version
@@ -413,6 +489,8 @@ def create_app(db_path: str | None = None, auth_enabled: bool | None = None) -> 
     def feed(after: int = 0, limit: int = 12):
         """Newest calls first, for the console's live feed. `after` is the last run id the page saw."""
         limit = max(1, min(limit, 50))
+        if st.clock:
+            return replay_feed(after, limit)
         rows = st.store.query(
             "SELECT scenario_id id, MAX(id) cursor, MAX(ts) ts, MIN(split) split, MAX(phase) phase, "
             "SUM(CASE WHEN lane='teacher' THEN 1 ELSE 0 END) frontier_runs, "
@@ -423,6 +501,34 @@ def create_app(db_path: str | None = None, auth_enabled: bool | None = None) -> 
             "ORDER BY MAX(id) DESC LIMIT ?", after, limit)
         top = st.store.query("SELECT COALESCE(MAX(id), 0) n FROM runs")[0]["n"]
         return {"cursor": top, "rows": rows}
+
+    def replay_feed(after: int, limit: int):
+        """Replay: the real calls come back in their real order, sped up and looping. The cursor counts
+        loops so it only goes up, and the page needs nothing special."""
+        loop, vt = st.clock.position()
+        big = 10 ** 7
+        base = loop * big
+        since = after - base if after >= base else 0
+        rows = st.store.query(
+            "SELECT scenario_id id, MAX(id) cursor, MAX(ts) ts, MIN(split) split, MAX(phase) phase, "
+            "SUM(CASE WHEN lane='teacher' THEN 1 ELSE 0 END) frontier_runs, "
+            "SUM(CASE WHEN lane='teacher' THEN passed ELSE 0 END) frontier_passed, "
+            "SUM(CASE WHEN lane!='teacher' THEN 1 ELSE 0 END) small_runs, "
+            "SUM(CASE WHEN lane!='teacher' THEN passed ELSE 0 END) small_passed, "
+            "SUM(served) served_small, SUM(kept) kept FROM runs WHERE ts <= ? GROUP BY scenario_id HAVING MAX(id) > ? "
+            "ORDER BY MAX(id) DESC LIMIT ?", vt, since, limit)
+        if not rows and after == 0:  # first look at the very start of a loop: show how the run ended
+            rows = st.store.query(
+                "SELECT scenario_id id, MAX(id) cursor, MAX(ts) ts, MIN(split) split, MAX(phase) phase, "
+                "SUM(CASE WHEN lane='teacher' THEN 1 ELSE 0 END) frontier_runs, "
+                "SUM(CASE WHEN lane='teacher' THEN passed ELSE 0 END) frontier_passed, "
+                "SUM(CASE WHEN lane!='teacher' THEN 1 ELSE 0 END) small_runs, "
+                "SUM(CASE WHEN lane!='teacher' THEN passed ELSE 0 END) small_passed, "
+                "SUM(served) served_small, SUM(kept) kept FROM runs GROUP BY scenario_id ORDER BY MAX(id) DESC LIMIT ?", limit)
+        top = st.store.query("SELECT COALESCE(MAX(id), 0) n FROM runs WHERE ts <= ?", vt)[0]["n"]
+        for r in rows:
+            r["cursor"] = base + r["cursor"]
+        return {"cursor": base + top, "rows": rows, "replay": True, "replay_time": vt}
 
     @app.get("/api/calls/{call_id}")
     def call_detail(call_id: str):
@@ -476,6 +582,7 @@ def create_app(db_path: str | None = None, auth_enabled: bool | None = None) -> 
         """Policy change, end to end: switch policy (switched sub-tasks roll back), collect examples on
         the new policy, run the held-out eval and let the gate re-promote. In live mode this spends
         money and can push a task past Mubit's 25-example training trigger, so it needs confirm_live."""
+        read_only()
         if b.version not in ("v1", "v2"):
             raise HTTPException(400, "v1 or v2")
         if st.s.live and not b.confirm_live:
@@ -497,7 +604,7 @@ def create_app(db_path: str | None = None, auth_enabled: bool | None = None) -> 
         Shown in every mode, always labelled; never mixed into the mock report."""
         path = Path(os.environ.get("SHADOWCALL_LIVE_RESULTS", str(ROOT / "data" / "live_results.json")))
         if not path.is_file():
-            return {}
+            return (st.replay or {}).get("live_results") or {}
         try:
             return json.loads(path.read_text(encoding="utf-8"))
         except (OSError, ValueError):
@@ -508,7 +615,7 @@ def create_app(db_path: str | None = None, auth_enabled: bool | None = None) -> 
         s_ = st.s
         present = lambda v: bool(v)
         return {
-            "mode": s_.mode, "policy": st.policy,
+            "mode": s_.mode, "policy": st.policy, "replay": st.replay["label"] if st.replay else None,
             "models": {"frontier": s_.teacher_model, "small": s_.shadow_model, "small_label": s_.shadow_label,
                        "adapter": s_.adapter_model},
             "endpoints": {"frontier": s_.teacher_base_url, "small": s_.shadow_base_url, "adapter": s_.adapter_base_url},
@@ -535,6 +642,7 @@ def create_app(db_path: str | None = None, auth_enabled: bool | None = None) -> 
     def chat(b: Chat):
         """Text-chat simulator (fallback when voice fails): run a call card, optionally with the
         caller's own words, through both lanes and show what each would do."""
+        read_only()
         c = st.find_card(b.card_id)
         if c is None:
             raise HTTPException(404, "card not found; GET /api/cards first")
@@ -554,6 +662,8 @@ def create_app(db_path: str | None = None, auth_enabled: bool | None = None) -> 
     @app.post("/webhook/elevenlabs/post-call")
     def post_call(payload: dict, bg: BackgroundTasks):
         """After a real call, run the sub-tasks on the real transcript against the demo card's truth."""
+        if st.s.replay:
+            return {"ok": True, "note": "replay mode: webhook ignored, no new calls"}
         conv, turns = transcript_from_post_call(payload)
         c = st.find_card(st.demo_card) if st.demo_card else None
         if c is None:

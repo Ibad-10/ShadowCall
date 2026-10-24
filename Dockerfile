@@ -1,7 +1,7 @@
 # ShadowCall web app. Build: docker build -t shadowcall .   Run: docker run -p 8000:8000 --env-file .env shadowcall
 FROM python:3.12-slim
 ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 PYTHONIOENCODING=utf-8 PIP_NO_CACHE_DIR=1 \
-    SHADOWCALL_MODE=mock SHADOWCALL_DB=/data/shadowcall.db PORT=8000
+    SHADOWCALL_MODE=replay SHADOWCALL_DB=/data/shadowcall.db PORT=8000
 WORKDIR /app
 COPY requirements.txt .
 RUN pip install -r requirements.txt

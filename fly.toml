@@ -6,7 +6,7 @@ primary_region = "lhr"
 [build]
 
 [env]
-  SHADOWCALL_MODE = "mock"
+  SHADOWCALL_MODE = "replay"
   SHADOWCALL_DB = "/data/shadowcall.db"
   SHADOWCALL_SIGNUP = "false"
   SHADOWCALL_COOKIE_SECURE = "true"

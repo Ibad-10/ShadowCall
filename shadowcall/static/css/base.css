@@ -85,3 +85,6 @@ input, textarea { caret-color:var(--signal); }
 .tip.tip-end::after { left:auto; right:-8px; transform:translate(0, 4px); }
 .tip.tip-end:hover::after, .tip.tip-end:focus-visible::after { transform:translate(0, 0); }
 .tip.tip-down::after { bottom:auto; top:calc(100% + 8px); }
+.notice.ok { border-color:var(--ok-line); background:var(--ok-bg); color:#BFEBD2; } .notice.ok .icon { color:var(--ok); }
+/* Replay mode is read-only: buttons that would run new model calls are hidden. */
+body.replay [data-run] { display:none !important; }

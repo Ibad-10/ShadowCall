@@ -18,10 +18,19 @@ Built for Mubit's Night Shift hackathon (23–25 Oct 2026). All code was written
 6. **Fast refresh.** When the policy changes from v1 to v2, every switched sub-task rolls back to shadow, re-qualifies on v2 data, and switches again.
 7. **Dashboard** with a disagreement log (the verifier says who was right), corrections, kept-example counts towards 25, gate events, pence per call and rollback buttons.
 
-## Run it offline (no keys)
+## Run the demo: replay the real live run (no keys, no calls)
 
 ```bash
 python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
+export SHADOWCALL_MODE=replay DEMO_USER=demo@example.com DEMO_PASSWORD='pick-a-long-password'
+.venv/bin/python -m shadowcall.cli serve   # http://localhost:8013
+```
+
+`SHADOWCALL_MODE=replay` is the demo default (Procfile, Dockerfile, `render.yaml`, `fly.toml`). It loads `data/live_replay.json`, the real run through Mubit on Sat 24 Oct 2026 (05:16–06:02 BST): 719 recorded replies with their Mubit request ids, scores, tokens and times, the 19 corrections and the 90 call cards. It holds no keys and no request headers. Every page is filled from it: the gate decides each job from the real held-out scores, disagreements are the real pairs where one model passed and the other failed, and the live feed replays the real calls in order, 30 times faster, on a loop (`SHADOWCALL_REPLAY_SPEED`). Replay is read-only: buttons that would make new model calls are hidden and their endpoints return 409. It writes to `data/replay.db` unless `SHADOWCALL_DB` is set, and reloads the replay on every start. To rebuild the JSON from the gitignored `data/live_run.db`: `python scripts_export_replay.py`.
+
+## Run it offline with simulated models (mock)
+
+```bash
 .venv/bin/python -m pytest -q
 export SHADOWCALL_MODE=mock DEMO_USER=demo@example.com DEMO_PASSWORD='pick-a-long-password'
 .venv/bin/python -m shadowcall.cli serve   # http://localhost:8013
@@ -67,7 +76,7 @@ cd D:\projects\mubit\shadowcall
 py -3.12 -m venv .venv            # once
 .venv\Scripts\pip install -r requirements.txt
 .venv\Scripts\python -m pytest -q
-$env:SHADOWCALL_MODE = "mock"
+$env:SHADOWCALL_MODE = "replay"   # or "mock" for simulated models
 $env:DEMO_USER = "demo@example.com"
 $env:DEMO_PASSWORD = "pick-a-long-password"
 $env:PYTHONUTF8 = "1"             # optional; the app already reads and writes UTF-8 explicitly
@@ -78,7 +87,7 @@ Then open http://localhost:8013. If the browser shows odd characters such as `Â
 
 ## Deploy (not done yet; nothing has been deployed)
 
-The app is one process with a SQLite file, so give it a **persistent disk** and run one instance. Set `DEMO_USER`, `DEMO_PASSWORD` and any keys as the host's secrets, never in the repo. On the public internet, set `SHADOWCALL_SIGNUP=false` and keep `SHADOWCALL_MODE=mock` unless you mean to spend.
+The app is one process with a SQLite file, so give it a **persistent disk** and run one instance. Set `DEMO_USER`, `DEMO_PASSWORD` and any keys as the host's secrets, never in the repo. On the public internet, set `SHADOWCALL_SIGNUP=false` and keep `SHADOWCALL_MODE=replay` (or `mock`) unless you mean to spend.
 
 - **Docker (anywhere):** `docker build -t shadowcall .` then `docker run -p 8000:8000 -v shadowcall-data:/data --env-file .env shadowcall`.
 - **Render:** `render.yaml` is a Blueprint (Docker runtime, 1 GB disk at `/data`, health check `/healthz`). In Render choose **New → Blueprint**, pick the repo, then fill in the secret env vars it asks for.

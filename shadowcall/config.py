@@ -91,6 +91,11 @@ class Settings:
     def live(self) -> bool:
         return self.mode == "live"
 
+    @property
+    def replay(self) -> bool:
+        """Replay: show the recorded live run from data/live_replay.json. Offline, read-only, no keys."""
+        return self.mode == "replay"
+
 
 def get_settings() -> Settings:
     return Settings()
